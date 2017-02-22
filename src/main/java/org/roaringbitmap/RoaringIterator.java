@@ -50,14 +50,12 @@ class RoaringIterator implements IntIterator {
         }
         return answer;
       case TypeCode.RUN_CONTAINER:
-        answer = base + le;
-        le++;
-        if (answer >= maxlength) {
-          pos++;
+        answer = hb | (base + le);
+        if (++le > maxlength) {
           le = 0;
-          if (pos < rc.nbrruns) {
-            base = hb | Util.toIntUnsigned(rc.getValue(pos));
-            maxlength = base + Util.toIntUnsigned(rc.getLength(pos));
+          if (++pos < rc.nbrruns) {
+            base = Util.toIntUnsigned(rc.getValue(pos));
+            maxlength = Util.toIntUnsigned(rc.getLength(pos));
           } else {
             nextContainer();
           }
@@ -98,12 +96,12 @@ class RoaringIterator implements IntIterator {
         pos = 0;
         le = 0;
         if (pos < rc.nbrruns) {
-          base = hb | Util.toIntUnsigned(rc.getValue(pos));
-          maxlength = base + Util.toIntUnsigned(rc.getLength(pos));
+          base = Util.toIntUnsigned(rc.getValue(pos));
+          maxlength = Util.toIntUnsigned(rc.getLength(pos));
         }
         break;
       default:
-        throw new IllegalStateException("Unknow iteration error");
+        throw new IllegalStateException("Unknown iteration error");
     }
   }
 
