@@ -573,30 +573,7 @@ public abstract class Container implements Iterable<Short>, Cloneable, Externali
    * @param x other container
    * @return aggregated container
    */
-  public Container lazyIOR(Container x) {
-    if (this instanceof ArrayContainer) {
-      if (x instanceof ArrayContainer) {
-        return ((ArrayContainer)this).lazyor((ArrayContainer) x);
-      } else if (x instanceof BitmapContainer) {
-        return ior((BitmapContainer) x);
-      }
-      return ((RunContainer) x).lazyor((ArrayContainer) this);
-    } else if (this instanceof RunContainer) {
-      if (x instanceof ArrayContainer) {
-        return ((RunContainer) this).ilazyor((ArrayContainer) x);
-      } else if (x instanceof BitmapContainer) {
-        return ior((BitmapContainer) x);
-      }
-      return ior((RunContainer) x);
-    } else {
-      if (x instanceof ArrayContainer) {
-        return ((BitmapContainer) this).ilazyor((ArrayContainer) x);
-      } else if (x instanceof BitmapContainer) {
-        return ((BitmapContainer) this).ilazyor((BitmapContainer) x);
-      }
-      return ((BitmapContainer) this).ilazyor((RunContainer) x);
-    }
-  }
+  public abstract Container lazyIOR(Container x);
 
   /**
    * Computes the bitwise OR of this container with another (union). This container as well as the

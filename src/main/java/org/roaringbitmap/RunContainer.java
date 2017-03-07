@@ -1397,6 +1397,16 @@ public final class RunContainer extends Container implements Cloneable {
   }
 
   @Override
+  public Container lazyIOR(Container x) {
+    if (x instanceof ArrayContainer) {
+      return ilazyor((ArrayContainer) x);
+    } else if (x instanceof BitmapContainer) {
+      return ior((BitmapContainer) x);
+    }
+    return ior((RunContainer) x);
+  }
+
+  @Override
   public Container ior(ArrayContainer x) {
     if (isFull()) {
       return this;
@@ -1938,7 +1948,7 @@ public final class RunContainer extends Container implements Cloneable {
       int length = Util.toIntUnsigned(getLength(k));
       if (x < value) {
         return answer;
-      } else if (value + length + 1 >= x) {
+      } else if (value + length >= x) {
         return answer + x - value + 1;
       }
       answer += length + 1;

@@ -1040,6 +1040,16 @@ public final class BitmapContainer extends Container implements Cloneable {
   }
 
   @Override
+  public Container lazyIOR(Container x) {
+    if (x instanceof ArrayContainer) {
+      return ilazyor((ArrayContainer) x);
+    } else if (x instanceof BitmapContainer) {
+      return ilazyor((BitmapContainer) x);
+    }
+    return ilazyor((RunContainer) x);
+  }
+
+  @Override
   public Container or(final BitmapContainer value2) {
     BitmapContainer value1 = this.clone();
     return value1.ior(value2);

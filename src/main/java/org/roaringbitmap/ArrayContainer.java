@@ -650,6 +650,16 @@ public final class ArrayContainer extends Container implements Cloneable {
 
 
   @Override
+  public Container lazyIOR(Container x) {
+    if (x instanceof ArrayContainer) {
+      return lazyor((ArrayContainer) x);
+    } else if (x instanceof BitmapContainer) {
+      return ior((BitmapContainer) x);
+    }
+    return ((RunContainer) x).lazyor(this);
+  }
+
+  @Override
   public Container ior(final ArrayContainer value2) {
     return this.or(value2);
   }
