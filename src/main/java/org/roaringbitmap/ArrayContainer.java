@@ -227,42 +227,33 @@ public final class ArrayContainer extends Container implements Cloneable {
 
   @Override
   public Container andNot(RunContainer x) {
-    int writeLocation = 0;
-    int runStart, runEnd; // the current or upcoming run.
-    int whichRun;
-    short[] buffer = new short[cardinality];
-    if (x.nbrruns == 0) {
+    if (x.numberOfRuns() == 0) {
       return clone();
-    } else {
-      runStart = Util.toIntUnsigned(x.getValue(0));
-      runEnd = runStart + Util.toIntUnsigned(x.getLength(0));
-      whichRun = 0;
     }
-
-    short val;
-    for (int i = 0; i < cardinality; ++i) {
-      val = content[i];
-      int valInt = Util.toIntUnsigned(val);
-      if (valInt < runStart) {
-        buffer[writeLocation++] = val;
-      } else if (valInt <= runEnd) {
-        ; // don't want item
-      } else {
-        // greater than this run, need to do an advanceUntil on runs
-        // done sequentially for now (no galloping attempts).
-        do {
-          if (whichRun + 1 < x.nbrruns) {
-            whichRun++;
-            runStart = Util.toIntUnsigned(x.getValue(whichRun));
-            runEnd = runStart + Util.toIntUnsigned(x.getLength(whichRun));
-          } else {
-            runStart = runEnd = (1 << 16) + 1; // infinity....
-          }
-        } while (valInt > runEnd);
-        --i; // need to re-process this val
+    int read = 0;
+    int write = 0;
+    short[] buffer = new short[cardinality];
+    for (int i = 0; i < x.numberOfRuns() && read < cardinality; ++i) {
+      short runStart = x.getValue(i);
+      if (Util.compareUnsigned(content[read], runStart) > 0) {
+        continue;
       }
+      int firstInRun = Util.advanceUntil(content, read - 1, cardinality, runStart);
+      int toWrite = firstInRun - read;
+      System.arraycopy(content, read, buffer, write, toWrite);
+      write += toWrite;
+      int runEnd = runStart + Util.toIntUnsigned(x.getLength(i));
+      int afterRun = Util.advanceUntil(content, firstInRun - 1, cardinality, (short) runEnd);
+      if (afterRun < cardinality && content[afterRun] == runEnd) { //at right boundary
+        afterRun++;
+      }
+      read = afterRun;
     }
-    return new ArrayContainer(writeLocation, buffer);
+    if (read < cardinality) {
+      System.arraycopy(content, read, buffer, write, cardinality - read);
+      write += cardinality - read;
+    }
+    return new ArrayContainer(write, buffer);
   }
 
   @Override

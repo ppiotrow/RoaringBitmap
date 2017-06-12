@@ -36,4 +36,12 @@ public class TestUtil {
         Assert.assertTrue(Util.compareUnsigned((short)0,(short)0) ==0);
 
     }
+
+    @Test
+    public void testAdvanceUntil() {
+        short data[] = {0, 3, 16, 18, 21, 29, 30};
+        Assert.assertEquals(1, Util.advanceUntil(data, -1, data.length, (short) 3));
+        Assert.assertEquals(5, Util.advanceUntil(data, -1, data.length, (short) 28));
+        Assert.assertEquals(5, Util.advanceUntil(data, -1, data.length, (short) 29));
+    }
 }

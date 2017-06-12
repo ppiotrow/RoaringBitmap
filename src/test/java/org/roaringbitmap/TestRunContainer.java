@@ -2148,13 +2148,20 @@ public class TestRunContainer {
           atLeastOneArray = true;
         }
 
-        Container c1 = thisContainer.andNot(set.get(l));
-        Container c2 = setb.get(k).andNot(setb.get(l));
-
-        assertTrue(c1.equals(c2));
+        RunContainer rc = set.get(l);
+        Container me = thisContainer.andNot(rc);
+        Container theirs = thisContainer.andNot(setb.get(l));
+        assertTrue(me.equals(theirs));
       }
     }
     assertTrue(atLeastOneArray);
+  }
+
+  @Test
+  public void RunContainerArg_ArrayANDNOT2() {
+    ArrayContainer ac = new ArrayContainer(10, new short[]{0, 2, 4, 8, 10, 15, 16, 48, 50, 61});
+    RunContainer rc = new RunContainer(new short[]{7, 3, 17, 2, 20, 3, 30, 3, 36, 6, 60, 5}, 6);
+    Assert.assertEquals(new ArrayContainer(7, new short[]{0, 2, 4, 15, 16, 48, 50}), ac.andNot(rc));
   }
 
 
