@@ -235,14 +235,15 @@ public final class ArrayContainer extends Container implements Cloneable {
     short[] buffer = new short[cardinality];
     for (int i = 0; i < x.numberOfRuns() && read < cardinality; ++i) {
       short runStart = x.getValue(i);
-      if (Util.compareUnsigned(content[read], runStart) > 0) {
+      int runEnd = runStart + Util.toIntUnsigned(x.getLength(i));
+      if (Util.compareUnsigned(content[read], (short) runEnd) > 0) {
         continue;
       }
       int firstInRun = Util.advanceUntil(content, read - 1, cardinality, runStart);
       int toWrite = firstInRun - read;
       System.arraycopy(content, read, buffer, write, toWrite);
       write += toWrite;
-      int runEnd = runStart + Util.toIntUnsigned(x.getLength(i));
+
       int afterRun = Util.advanceUntil(content, firstInRun - 1, cardinality, (short) runEnd);
       if (afterRun < cardinality && content[afterRun] == runEnd) { //at right boundary
         afterRun++;
