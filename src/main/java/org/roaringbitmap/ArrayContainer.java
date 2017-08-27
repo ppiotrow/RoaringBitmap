@@ -230,8 +230,51 @@ public final class ArrayContainer extends Container implements Cloneable {
     if (x.numberOfRuns() == 0) {
       return clone();
     }
-    int read = 0;
+    final boolean byCardinality = (cardinality / x.numberOfRuns()) < 2;
+    if (byCardinality) {
+      return byCardinalityAndNot(x);
+    }
+    return byRunsAndNot(x);
+  }
+
+  private ArrayContainer byCardinalityAndNot(RunContainer x) {
+    int writeLocation = 0;
+    int runStart, runEnd; // the current or upcoming run.
+    int whichRun;
+    short[] buffer = new short[cardinality];
+
+    runStart = Util.toIntUnsigned(x.getValue(0));
+    runEnd = runStart + Util.toIntUnsigned(x.getLength(0));
+    whichRun = 0;
+    short val;
+    for (int i = 0; i < cardinality; ++i) {
+      val = content[i];
+      int valInt = Util.toIntUnsigned(val);
+      if (valInt < runStart) {
+        buffer[writeLocation++] = val;
+      } else if (valInt <= runEnd) {
+        ; // don't want item
+      } else {
+        // greater than this run, need to do an advanceUntil on runs
+        // done sequentially for now (no galloping attempts).
+        do {
+          if (whichRun + 1 < x.nbrruns) {
+            whichRun++;
+            runStart = Util.toIntUnsigned(x.getValue(whichRun));
+            runEnd = runStart + Util.toIntUnsigned(x.getLength(whichRun));
+          } else {
+            runStart = runEnd = (1 << 16) + 1; // infinity....
+          }
+        } while (valInt > runEnd);
+        --i; // need to re-process this val
+      }
+    }
+    return new ArrayContainer(writeLocation, buffer);
+  }
+
+  private ArrayContainer byRunsAndNot(RunContainer x) {
     int write = 0;
+    int read = 0;
     short[] buffer = new short[cardinality];
     for (int i = 0; i < x.numberOfRuns() && read < cardinality; ++i) {
       short runStart = x.getValue(i);
