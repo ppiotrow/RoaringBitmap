@@ -230,7 +230,7 @@ public final class ArrayContainer extends Container implements Cloneable {
     if (x.numberOfRuns() == 0) {
       return clone();
     }
-    final boolean byCardinality = (cardinality / x.numberOfRuns()) < 2;
+    final boolean byCardinality = (cardinality / x.numberOfRuns()) < 100;
     if (byCardinality) {
       return byCardinalityAndNot(x);
     }

@@ -22,18 +22,12 @@ public class RealDataBenchmarkState extends org.roaringbitmap.AbstractBenchmarkS
    public String dataset;
 
    @Param({
-           CONCISE,
-           WAH,
-           EWAH,
-           EWAH32,
-           ROARING,
            ROARING_WITH_RUN
    })
    public String type;
 
    @Param({
-           "false",
-           "true"
+           "false"
    })
    public boolean immutable;
 
