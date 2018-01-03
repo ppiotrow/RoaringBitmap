@@ -229,7 +229,7 @@ public final class ArrayContainer extends Container implements Cloneable {
 
   @Override
   public Container andNot(RunContainer x) {
-    int runStart, runEnd; // the current or upcoming run.
+    int runStart, len, runEnd; // the current or upcoming run.
     int whichRun;
     if (x.nbrruns == 0) {
       return clone();
@@ -237,20 +237,22 @@ public final class ArrayContainer extends Container implements Cloneable {
       return ArrayContainer.empty();
     } else {
       runStart = Util.toIntUnsigned(x.getValue(0));
-      runEnd = runStart + Util.toIntUnsigned(x.getLength(0));
+      len = Util.toIntUnsigned(x.getLength(0));
+      runEnd = runStart + len;
       whichRun = 0;
     }
     int writeLocation = 0;
     short[] buffer = new short[cardinality];
 
     short val;
-    for (int i = 0; i < cardinality; ++i) {
+    for (int i = 0; i < cardinality;) {
       val = content[i];
       int valInt = Util.toIntUnsigned(val);
       if (valInt < runStart) {
         buffer[writeLocation++] = val;
+        i++;
       } else if (valInt <= runEnd) {
-        ; // don't want item
+        i = Util.advanceUntil(content, i, Math.min(i + len, cardinality), (short) runEnd);
       } else {
         // greater than this run, need to do an advanceUntil on runs
         // done sequentially for now (no galloping attempts).
@@ -258,12 +260,12 @@ public final class ArrayContainer extends Container implements Cloneable {
           if (whichRun + 1 < x.nbrruns) {
             whichRun++;
             runStart = Util.toIntUnsigned(x.getValue(whichRun));
-            runEnd = runStart + Util.toIntUnsigned(x.getLength(whichRun));
+            len = Util.toIntUnsigned(x.getLength(whichRun));
+            runEnd = runStart + len;
           } else {
             runStart = runEnd = (1 << 16) + 1; // infinity....
           }
         } while (valInt > runEnd);
-        --i; // need to re-process this val
       }
     }
     return new ArrayContainer(writeLocation, buffer);
