@@ -241,17 +241,23 @@ public final class ArrayContainer extends Container implements Cloneable {
       whichRun = 0;
     }
     int writeLocation = 0;
+    final boolean advanceRuns = (cardinality / x.numberOfRuns()) > 100;
     short[] buffer = new short[cardinality];
 
     short val;
-    for (int i = 0; i < cardinality;) {
+    for (int i = 0; i < cardinality; ) {
       val = content[i];
       int valInt = Util.toIntUnsigned(val);
       if (valInt < runStart) {
         buffer[writeLocation++] = val;
         i++;
-      } else if (valInt <= runEnd) {
-        i++; // don't want item
+      } else if (valInt <= runEnd) { // don't want item
+        if (advanceRuns) {
+          i = Util.advanceUntil(content, i, cardinality, (short) runEnd);
+        } else {
+          i++;
+        }
+
       } else {
         // greater than this run, need to do an advanceUntil on runs
         // done sequentially for now (no galloping attempts).
