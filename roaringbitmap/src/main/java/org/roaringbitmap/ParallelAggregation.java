@@ -8,7 +8,9 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.roaringbitmap.Util.compareUnsigned;
 
@@ -136,25 +138,34 @@ public class ParallelAggregation {
    * @return The containers from the bitmaps grouped by key
    */
   public static SortedMap<Short, List<Container>> groupByKey(RoaringBitmap... bitmaps) {
-    Map<Short, List<Container>> grouped = new HashMap<>();
-    for (RoaringBitmap bitmap : bitmaps) {
-      RoaringArray ra = bitmap.highLowContainer;
-      for (int i = 0; i < ra.size; ++i) {
-        Container container = ra.values[i];
-        Short key = ra.keys[i];
-        List<Container> slice = grouped.get(key);
-        if (null == slice) {
-          slice = new ArrayList<>();
-          grouped.put(key, slice);
-        }
-        slice.add(container);
+    return Arrays.stream(bitmaps).flatMap(r -> {
+      Stream.Builder<KeyWithContainer> builder = Stream.builder();
+      RoaringArray ra = r.highLowContainer;
+      for (int i = 0; i < r.highLowContainer.size; ++i) {
+        builder.accept(new KeyWithContainer(ra.keys[i], ra.values[i]));
       }
-    }
-    SortedMap<Short, List<Container>> sorted = new TreeMap<>(Util::compareUnsigned);
-    sorted.putAll(grouped);
-    return sorted;
+      return builder.build();
+    }).collect(Collectors.groupingBy(KeyWithContainer::getKey, () -> new TreeMap<>(Util::compareUnsigned), Collectors.mapping(KeyWithContainer::getContainer, Collectors.toList())));
+
   }
 
+  private static class KeyWithContainer {
+    private final Short key;
+    private final Container container;
+
+    private Short getKey() {
+      return key;
+    }
+
+    private Container getContainer() {
+      return container;
+    }
+
+    private KeyWithContainer(Short k, Container c) {
+      key = k;
+      container = c;
+    }
+  }
 
   /**
    * Computes the bitwise union of the input bitmaps
