@@ -1,6 +1,7 @@
 package org.roaringbitmap;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.function.BiConsumer;
@@ -138,15 +139,15 @@ public class ParallelAggregation {
    * @return The containers from the bitmaps grouped by key
    */
   public static SortedMap<Short, List<Container>> groupByKey(RoaringBitmap... bitmaps) {
-    return Arrays.stream(bitmaps).flatMap(r -> {
+    ConcurrentMap<Short, List<Container>> collect = Arrays.stream(bitmaps).parallel().flatMap(r -> {
       Stream.Builder<KeyWithContainer> builder = Stream.builder();
       RoaringArray ra = r.highLowContainer;
       for (int i = 0; i < r.highLowContainer.size; ++i) {
         builder.accept(new KeyWithContainer(ra.keys[i], ra.values[i]));
       }
       return builder.build();
-    }).collect(Collectors.groupingBy(KeyWithContainer::getKey, () -> new TreeMap<>(Util::compareUnsigned), Collectors.mapping(KeyWithContainer::getContainer, Collectors.toList())));
-
+    }).collect(Collectors.groupingByConcurrent(KeyWithContainer::getKey, Collectors.mapping(KeyWithContainer::getContainer, Collectors.toList())));
+    return new TreeMap<>(collect);
   }
 
   private static class KeyWithContainer {
