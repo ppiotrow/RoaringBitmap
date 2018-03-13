@@ -139,15 +139,18 @@ public class ParallelAggregation {
    * @return The containers from the bitmaps grouped by key
    */
   public static SortedMap<Short, List<Container>> groupByKey(RoaringBitmap... bitmaps) {
-    ConcurrentMap<Short, List<Container>> collect = Arrays.stream(bitmaps).parallel().flatMap(r -> {
+    ConcurrentMap<Short, Container> collect = Arrays.stream(bitmaps).flatMap(r -> {
       Stream.Builder<KeyWithContainer> builder = Stream.builder();
       RoaringArray ra = r.highLowContainer;
       for (int i = 0; i < r.highLowContainer.size; ++i) {
         builder.accept(new KeyWithContainer(ra.keys[i], ra.values[i]));
       }
       return builder.build();
-    }).collect(Collectors.groupingByConcurrent(KeyWithContainer::getKey, Collectors.mapping(KeyWithContainer::getContainer, Collectors.toList())));
-    return new TreeMap<>(collect);
+    })
+        .collect(Collectors.groupingByConcurrent(KeyWithContainer::getKey,
+            Collectors.mapping(KeyWithContainer::getContainer, Collector.of(() -> new BitmapContainer(new long[1 << 10], -1),
+                Container::lazyIOR, Container::lazyIOR, Container::repairAfterLazy))));
+    return new TreeMap<>();
   }
 
   private static class KeyWithContainer {
@@ -174,19 +177,24 @@ public class ParallelAggregation {
    * @return the union of the bitmaps
    */
   public static RoaringBitmap or(RoaringBitmap... bitmaps) {
-    SortedMap<Short, List<Container>> grouped = groupByKey(bitmaps);
-    short[] keys = new short[grouped.size()];
-    Container[] values = new Container[grouped.size()];
-    List<List<Container>> slices = new ArrayList<>(grouped.size());
-    int i = 0;
-    for (Map.Entry<Short, List<Container>> slice : grouped.entrySet()) {
-      keys[i++] = slice.getKey();
-      slices.add(slice.getValue());
-    }
-    IntStream.range(0, i)
-             .parallel()
-             .forEach(position -> values[position] = or(slices.get(position)));
-    return new RoaringBitmap(new RoaringArray(keys, values, i));
+    Map<Short, Container> collect = Arrays.stream(bitmaps).flatMap(r -> {
+      Stream.Builder<KeyWithContainer> builder = Stream.builder();
+      RoaringArray ra = r.highLowContainer;
+      for (int i = 0; i < r.highLowContainer.size; ++i) {
+        builder.accept(new KeyWithContainer(ra.keys[i], ra.values[i]));
+      }
+      return builder.build();
+    })
+        .collect(Collectors.groupingBy(KeyWithContainer::getKey,
+            Collectors.mapping(KeyWithContainer::getContainer,
+                Collector.of(
+                    () -> new BitmapContainer(new long[1 << 10], -1),
+                    Container::lazyIOR,
+                    Container::lazyIOR,
+                    Container::repairAfterLazy))));
+    RoaringBitmap result = new RoaringBitmap();
+    collect.forEach((k, v) -> result.highLowContainer.insertNewKeyValueAt(0, k, v)); //todo sort
+    return result;
   }
 
   /**
