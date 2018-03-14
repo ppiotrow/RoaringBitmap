@@ -177,15 +177,15 @@ public class ParallelAggregation {
    * @return the union of the bitmaps
    */
   public static RoaringBitmap or(RoaringBitmap... bitmaps) {
-    Map<Short, Container> collect = Arrays.stream(bitmaps).flatMap(r -> {
+    Map<Short, Container> collect = Arrays.stream(bitmaps).parallel().flatMap(r -> {
       Stream.Builder<KeyWithContainer> builder = Stream.builder();
       RoaringArray ra = r.highLowContainer;
       for (int i = 0; i < r.highLowContainer.size; ++i) {
         builder.accept(new KeyWithContainer(ra.keys[i], ra.values[i]));
       }
       return builder.build();
-    })
-        .collect(Collectors.groupingBy(KeyWithContainer::getKey,
+    }).parallel()
+        .collect(Collectors.groupingByConcurrent(KeyWithContainer::getKey,
             Collectors.mapping(KeyWithContainer::getContainer,
                 Collector.of(
                     () -> new BitmapContainer(new long[1 << 10], -1),
